@@ -1,11 +1,15 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
+import { ChevronDown, Loader2, ChevronUp } from 'lucide-react'
 import { Document, Page, pdfjs } from 'react-pdf'
+import { useToast } from './ui/use-toast'
+import { useResizeDetector } from 'react-resize-detector'
 
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
-import { useToast } from './ui/use-toast'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { useState } from 'react'
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`
 
@@ -16,14 +20,51 @@ interface Props {
 const PdfRenderer = ({ url }: Props) => {
   const { toast } = useToast()
 
+  const [numPages, setNumPages] = useState<number>()
+  const [currPage, setCurrPage] = useState<number>(1)
+
+  const { width, ref } = useResizeDetector()
+
   return (
     <div className='w-full bg-white rounded-md shadow flex flex-col items-center'>
       <div className='h-14 w-full border-b border-zinc-200 flex items-center justify-between'>
-        <div className='flex items-center gap-1.5'>top bar</div>
+        <div className='flex items-center gap-1.5'>
+          <Button
+            disabled={currPage === 1}
+            onClick={() => {
+              setCurrPage((prev) => (prev - 1 > 1 ? prev - 1 : 1))
+            }}
+            variant='ghost'
+            aria-label='previous-page'
+          >
+            <ChevronDown className='h-4 w-4' />
+          </Button>
+
+          <div className='flex items-center gap-1.5'>
+            <Input value={currPage} className='w-12 h-8' />
+            <p className='text-zinc-700 text-sm space-x-1'>
+              <span>/</span>
+              <span>{numPages ?? 'x'}</span>
+            </p>
+          </div>
+
+          <Button
+            disabled={numPages === undefined || currPage === numPages}
+            onClick={() => {
+              setCurrPage((prev) =>
+                prev + 1 > numPages! ? numPages! : prev + 1,
+              )
+            }}
+            variant='ghost'
+            aria-label='next page'
+          >
+            <ChevronUp className='h-4 w-4' />
+          </Button>
+        </div>
       </div>
 
       <div className='flex-1 w-full max-h-screen'>
-        <div>
+        <div ref={ref}>
           <Document
             loading={
               <div className='flex justify-center'>
@@ -37,10 +78,15 @@ const PdfRenderer = ({ url }: Props) => {
                 variant: 'destructive',
               })
             }}
+            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
             file={url}
             className='max-h-full'
           >
-            <Page pageNumber={1} className='max-h-full' />
+            <Page
+              width={width ? width : 1}
+              pageNumber={currPage}
+              className='max-h-full'
+            />
           </Document>
         </div>
       </div>
