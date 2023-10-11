@@ -1,4 +1,8 @@
-const ChatInput = () => {
+interface Props {
+  isDisabled?: boolean
+}
+
+const ChatInput = ({ isDisabled }: Props) => {
   return <div></div>
 }
 
